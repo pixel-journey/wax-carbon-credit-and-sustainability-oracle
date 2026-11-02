@@ -44,18 +44,10 @@ export function untilNextWithPolicy(kg: bigint, policy: CreditPolicy): UntilResu
   return untilNext(kg, policy.kgPerCredit);
 }
 
-/**
- * How many whole credits can be minted if the registry only issues on exact multiples
- * and discards remainder (educational floor — not a real mint).
- */
 export function mintableWhole(kg: bigint, kgPerCredit: bigint): UntilResult {
   return untilNext(kg, kgPerCredit);
 }
 
-/**
- * Progress toward the next credit in basis points of the current incomplete unit.
- * 0 when exact (no partial unit in progress).
- */
 export function progressBps(
   kg: bigint,
   kgPerCredit: bigint
@@ -66,10 +58,6 @@ export function progressBps(
   return { ok: true, bps: (r.remainder * 10_000n) / kgPerCredit };
 }
 
-/**
- * After adding `deltaKg`, what does the meter look like?
- * Pure; does not mutate anything.
- */
 export function afterAccumulate(
   kg: bigint,
   deltaKg: bigint,
@@ -79,10 +67,6 @@ export function afterAccumulate(
   return untilNext(kg + deltaKg, kgPerCredit);
 }
 
-/**
- * Sum independent batch masses, then measure once.
- * Educational: batching order does not change the floor total when only summing.
- */
 export function fromBatches(
   batches: readonly bigint[],
   kgPerCredit: bigint
@@ -108,7 +92,6 @@ export type PolicyCompare = {
   needDelta: bigint;
 };
 
-/** Side-by-side remainder under two policies for the same kg. */
 export function comparePolicies(
   kg: bigint,
   left: CreditPolicy,
@@ -127,14 +110,64 @@ export function comparePolicies(
   };
 }
 
-/** ASCII meter for remainder progress (0–10 blocks). Exact → full bar labeled done. */
 export function meterBar(kg: bigint, kgPerCredit: bigint): string {
   const r = untilNext(kg, kgPerCredit);
   if (!r.ok) return r.reason;
   if (r.exact) return "[##########] exact";
   const p = progressBps(kg, kgPerCredit);
   if (!p.ok) return p.reason;
-  const filled = Number(p.bps / 1_000n); // 0..10
+  const filled = Number(p.bps / 1_000n);
   const clamped = Math.max(0, Math.min(10, filled));
   return `[${"#".repeat(clamped)}${".".repeat(10 - clamped)}] ${p.bps.toString()} bps`;
+}
+
+/**
+ * Invariants that must hold for any successful untilNext result.
+ * Used in tests and as documentation of the arithmetic contract.
+ */
+export function assertUntilInvariants(
+  kg: bigint,
+  kgPerCredit: bigint,
+  r: UntilOk
+): void {
+  if (r.accountedKg !== r.whole * kgPerCredit) {
+    throw new Error("accountedKg must equal whole * kgPerCredit");
+  }
+  if (r.accountedKg + r.remainder !== kg) {
+    throw new Error("accountedKg + remainder must equal kg");
+  }
+  if (r.exact) {
+    if (r.remainder !== 0n || r.need !== 0n) {
+      throw new Error("exact implies remainder and need are 0");
+    }
+  } else {
+    if (r.need + r.remainder !== kgPerCredit) {
+      throw new Error("need + remainder must equal kgPerCredit when not exact");
+    }
+    if (r.remainder <= 0n || r.remainder >= kgPerCredit) {
+      throw new Error("remainder must be in (0, kgPerCredit)");
+    }
+  }
+}
+
+/** Parse "100, 200, 50" style batch input. */
+export function parseBatches(text: string): { ok: false; reason: string } | { ok: true; batches: bigint[] } {
+  const parts = text
+    .split(/[,\s]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (parts.length < 1 || parts.length > 32) {
+    return { ok: false, reason: "enter 1 to 32 batch sizes" };
+  }
+  const batches: bigint[] = [];
+  for (const p of parts) {
+    try {
+      const n = BigInt(p);
+      if (n < 0n) return { ok: false, reason: "batches must be non-negative" };
+      batches.push(n);
+    } catch {
+      return { ok: false, reason: `invalid batch: ${p}` };
+    }
+  }
+  return { ok: true, batches };
 }

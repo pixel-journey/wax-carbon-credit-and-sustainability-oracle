@@ -22,9 +22,22 @@ export function exportNeedMarkdown(
   ].join("\n");
 }
 
-export function downloadText(filename: string, content: string): void {
+export function exportNeedCsv(
+  rows: { kg: string; kgPerCredit: string; whole: string; remainder: string; need: string; exact: string }[]
+): string {
+  const header = "kg,kg_per_credit,whole,remainder,need,exact";
+  const body = rows
+    .map(
+      (r) =>
+        `${r.kg},${r.kgPerCredit},${r.whole},${r.remainder},${r.need},${r.exact}`
+    )
+    .join("\n");
+  return `${header}\n${body}\n`;
+}
+
+export function downloadText(filename: string, content: string, mime = "text/plain;charset=utf-8"): void {
   if (typeof document === "undefined") return;
-  const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+  const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

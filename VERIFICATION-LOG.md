@@ -4,10 +4,10 @@
 
 | Claim | Status |
 | --- | --- |
-| untilNext partial / exact / zero | unit |
+| untilNext + invariants across range | unit |
 | progressBps | unit |
 | afterAccumulate | unit |
-| fromBatches | unit |
+| fromBatches / parseBatches | unit |
 | comparePolicies | unit |
 | meterBar | unit |
 | Live oracle / issuance | out of scope |

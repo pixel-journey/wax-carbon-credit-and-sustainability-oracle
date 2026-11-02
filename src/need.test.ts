@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import { POLICY_HALF_TONNE, POLICY_TONNE } from "./fixtures";
 import {
   afterAccumulate,
+  assertUntilInvariants,
   comparePolicies,
   fromBatches,
   meterBar,
+  parseBatches,
   progressBps,
   untilNext,
   untilNextWithPolicy,
@@ -12,7 +14,8 @@ import {
 
 describe("untilNext", () => {
   it("partial unit needs the inverted remainder", () => {
-    expect(untilNext(2_500n, 1_000n)).toEqual({
+    const r = untilNext(2_500n, 1_000n);
+    expect(r).toEqual({
       ok: true,
       whole: 2n,
       remainder: 500n,
@@ -20,6 +23,7 @@ describe("untilNext", () => {
       exact: false,
       accountedKg: 2_000n,
     });
+    if (r.ok) assertUntilInvariants(2_500n, 1_000n, r);
   });
 
   it("exact multiple needs zero", () => {
@@ -28,22 +32,26 @@ describe("untilNext", () => {
     if (!r.ok) return;
     expect(r.need).toBe(0n);
     expect(r.exact).toBe(true);
+    assertUntilInvariants(2_000n, 1_000n, r);
   });
 
   it("zero kg is exact with zero whole", () => {
-    expect(untilNext(0n, 1_000n)).toEqual({
-      ok: true,
-      whole: 0n,
-      remainder: 0n,
-      need: 0n,
-      exact: true,
-      accountedKg: 0n,
-    });
+    const r = untilNext(0n, 1_000n);
+    expect(r.ok).toBe(true);
+    if (r.ok) assertUntilInvariants(0n, 1_000n, r);
   });
 
   it("refuses bad inputs", () => {
     expect(untilNext(1n, 0n).ok).toBe(false);
     expect(untilNext(-1n, 1000n).ok).toBe(false);
+  });
+
+  it("holds invariants across a range", () => {
+    for (const kg of [0n, 1n, 999n, 1000n, 1001n, 2500n, 9999n]) {
+      const r = untilNext(kg, 1000n);
+      expect(r.ok).toBe(true);
+      if (r.ok) assertUntilInvariants(kg, 1000n, r);
+    }
   });
 });
 
@@ -78,6 +86,14 @@ describe("fromBatches", () => {
   });
   it("rejects empty", () => {
     expect(fromBatches([], 1000n).ok).toBe(false);
+  });
+});
+
+describe("parseBatches", () => {
+  it("parses comma and space separated", () => {
+    const r = parseBatches("100, 200 50");
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.batches).toEqual([100n, 200n, 50n]);
   });
 });
 

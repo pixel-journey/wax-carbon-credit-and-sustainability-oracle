@@ -4,10 +4,10 @@
 
 | Area | Notes |
 |------|-------|
-| Engine | fromBatches, comparePolicies, meterBar |
-| Tests | zero kg, batches, compare, meter |
-| UI | policy compare table, meter strip, runbook, localStorage |
-| Docs | EDUCATION expanded |
+| Engine | assertUntilInvariants, parseBatches |
+| Tests | range invariants, parseBatches |
+| UI | batch mode, CSV export, worked-examples table |
+| Myths/glossary | batching myth, remainder/accountedKg terms |
 
 ```bash
 npm test && npm run dev
