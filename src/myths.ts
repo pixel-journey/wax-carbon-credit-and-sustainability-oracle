@@ -1,17 +1,37 @@
 export const CARBON_MYTHS = [
   {
-    myth: "This is a live carbon-credit oracle",
+    myth: "This is a live carbon-credit or sustainability oracle",
     reality:
-      "Pure untilNext(kg, kgPerCredit). No host, registry, or attestation is queried.",
+      "Pure integer math on caller-supplied kg and kg-per-credit. No registry, MRV feed, or chain call.",
   },
   {
-    myth: "Need 0 means a credit was issued",
+    myth: "need === 0 means a credit was issued on-chain",
     reality:
-      "Need 0 only means the kg total divides evenly. Issuance is out of scope.",
+      "It only means the mass divides evenly under the policy. Issuance is out of scope.",
   },
   {
-    myth: "Fractional credits are counted here",
+    myth: "Fractional credits are counted as whole",
     reality:
-      "whole is floor division. Remainder drives how many kg are still needed.",
+      "whole is floor division. Partial progress is remainder / progressBps only.",
+  },
+  {
+    myth: "This verifies real-world carbon impact",
+    reality:
+      "No environmental claim is verified. The name is historical; the code is a remainder lab.",
+  },
+] as const;
+
+export const GLOSSARY = [
+  {
+    term: "whole",
+    meaning: "floor(kg / kgPerCredit) — complete units under the policy.",
+  },
+  {
+    term: "need",
+    meaning: "Kilograms still required to reach the next whole unit (0 if exact).",
+  },
+  {
+    term: "progressBps",
+    meaning: "How far into the current incomplete unit, in basis points of kgPerCredit.",
   },
 ] as const;

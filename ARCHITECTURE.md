@@ -1,5 +1,21 @@
 # Architecture
 
-Report how many kilograms are left before the next whole credit.
+```
+kg, kgPerCredit (or CreditPolicy)
+        │
+        ▼
+   untilNext → whole, remainder, need, exact, accountedKg
+        │
+        ├── progressBps (partial unit only)
+        ├── afterAccumulate (preview kg + delta)
+        └── exportNeedMarkdown
+```
 
-The page calls the same functions as the tests. It does not open a socket and it does not sign.
+| Layer | Role |
+|-------|------|
+| `need.ts` | Pure rules |
+| `fixtures.ts` | Sample policies / scenarios |
+| `Demo.tsx` | Teaching UI |
+| `api.ts` / `usecases.ts` | Unsent HTTP shapes |
+
+**Honesty boundary:** no registry, no MRV, no wallet, no broadcast.

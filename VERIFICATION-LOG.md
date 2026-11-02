@@ -4,5 +4,9 @@
 
 | Claim | Status |
 | --- | --- |
-| untilNext | unit |
-| Live oracle | out of scope |
+| untilNext partial / exact | unit |
+| progressBps | unit |
+| afterAccumulate | unit |
+| Refusal paths | unit |
+| Live oracle / issuance | out of scope |
+| Network from demo | not called |
