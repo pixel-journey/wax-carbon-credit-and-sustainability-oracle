@@ -1,15 +1,45 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { downloadText, exportNeedMarkdown } from "./exportReport";
-import { POLICY_TONNE, SCENARIOS } from "./fixtures";
+import { POLICY_HALF_TONNE, POLICY_TONNE, SCENARIOS } from "./fixtures";
 import { CARBON_MYTHS, GLOSSARY } from "./myths";
-import { afterAccumulate, progressBps, untilNext } from "./need";
+import {
+  afterAccumulate,
+  comparePolicies,
+  meterBar,
+  progressBps,
+  untilNext,
+} from "./need";
+
+const LS_KEY = "pxj-carbon-need-v1";
 
 export function Demo() {
   const [kg, setKg] = useState("2500");
   const [per, setPer] = useState("1000");
   const [delta, setDelta] = useState("0");
+  const [compare, setCompare] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { kg?: string; per?: string; delta?: string };
+      if (parsed.kg) setKg(parsed.kg);
+      if (parsed.per) setPer(parsed.per);
+      if (parsed.delta) setDelta(parsed.delta);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify({ kg, per, delta }));
+    } catch {
+      /* ignore */
+    }
+  }, [kg, per, delta]);
 
   const result = useMemo(() => {
     try {
@@ -25,11 +55,32 @@ export function Demo() {
 
   const progress = useMemo(() => {
     try {
-      return progressBps(BigInt(kg.trim() || "0"), BigInt(per.trim() || "0"));
+      const baseKg =
+        BigInt(kg.trim() || "0") + BigInt(delta.trim() || "0");
+      return progressBps(baseKg, BigInt(per.trim() || "0"));
     } catch {
       return null;
     }
-  }, [kg, per]);
+  }, [kg, per, delta]);
+
+  const bar = useMemo(() => {
+    try {
+      const baseKg =
+        BigInt(kg.trim() || "0") + BigInt(delta.trim() || "0");
+      return meterBar(baseKg, BigInt(per.trim() || "0"));
+    } catch {
+      return "";
+    }
+  }, [kg, per, delta]);
+
+  const sideBySide = useMemo(() => {
+    if (!compare) return null;
+    try {
+      return comparePolicies(BigInt(kg.trim() || "0"), POLICY_TONNE, POLICY_HALF_TONNE);
+    } catch {
+      return null;
+    }
+  }, [compare, kg]);
 
   const applyScenario = (id: string) => {
     const s = SCENARIOS.find((x) => x.id === id);
@@ -86,20 +137,29 @@ export function Demo() {
         />
       </label>
       <label style={{ display: "block", marginBottom: "0.75rem" }}>
-        kg per credit ({POLICY_TONNE.label} is the sample default)
+        kg per credit
         <input
           value={per}
           onChange={(e) => setPer(e.target.value)}
           style={{ display: "block", width: "100%", marginTop: "0.25rem" }}
         />
       </label>
-      <label style={{ display: "block", marginBottom: "1rem" }}>
+      <label style={{ display: "block", marginBottom: "0.75rem" }}>
         Optional delta to accumulate (preview only)
         <input
           value={delta}
           onChange={(e) => setDelta(e.target.value)}
           style={{ display: "block", width: "100%", marginTop: "0.25rem" }}
         />
+      </label>
+
+      <label style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "1rem" }}>
+        <input
+          type="checkbox"
+          checked={compare}
+          onChange={(e) => setCompare(e.target.checked)}
+        />
+        Compare {POLICY_TONNE.label} vs {POLICY_HALF_TONNE.label} for this kg
       </label>
 
       {result.ok ? (
@@ -109,6 +169,16 @@ export function Demo() {
             <strong>{result.remainder.toString()}</strong> kg · need{" "}
             <strong>{result.need.toString()}</strong> kg
             {result.exact ? " · exact" : ""}
+          </p>
+          <p
+            style={{
+              fontFamily: "ui-monospace, monospace",
+              fontSize: "0.9rem",
+              letterSpacing: "0.05em",
+            }}
+            aria-label="Progress meter"
+          >
+            {bar}
           </p>
           {progress && progress.ok && (
             <p style={{ fontSize: "0.9rem" }}>
@@ -128,7 +198,49 @@ export function Demo() {
         <p>{result.reason}</p>
       )}
 
+      {sideBySide && sideBySide.ok && (
+        <section style={{ marginTop: "1.5rem" }}>
+          <h2 style={{ fontSize: "1rem" }}>Policy compare</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Policy</th>
+                <th>Whole</th>
+                <th>Need kg</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{POLICY_TONNE.label}</td>
+                <td>{sideBySide.left.whole.toString()}</td>
+                <td>{sideBySide.left.need.toString()}</td>
+              </tr>
+              <tr>
+                <td>{POLICY_HALF_TONNE.label}</td>
+                <td>{sideBySide.right.whole.toString()}</td>
+                <td>{sideBySide.right.need.toString()}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p style={{ fontSize: "0.85rem" }}>
+            wholeΔ {sideBySide.wholeDelta.toString()} · needΔ{" "}
+            {sideBySide.needDelta.toString()}
+          </p>
+        </section>
+      )}
+
       <section style={{ marginTop: "2rem" }}>
+        <h2 style={{ fontSize: "1rem" }}>Runbook</h2>
+        <ol style={{ fontSize: "0.9rem" }}>
+          <li>Pick a published kg-per-credit policy (or a sample scenario).</li>
+          <li>Enter accumulated kg; read whole / need / meter.</li>
+          <li>Optional: preview a delta before logging mass in a product.</li>
+          <li>Optional: compare two policies for the same mass.</li>
+          <li>Never treat need=0 as an on-chain mint or environmental proof.</li>
+        </ol>
+      </section>
+
+      <section style={{ marginTop: "1.5rem" }}>
         <h2 style={{ fontSize: "1rem" }}>Glossary</h2>
         <dl>
           {GLOSSARY.map((g) => (
@@ -143,7 +255,7 @@ export function Demo() {
       </section>
 
       <p style={{ marginTop: "2rem", fontSize: "0.85rem", opacity: 0.75 }}>
-        See EDUCATION.md · POLICY.md · ARCHITECTURE.md
+        Inputs persist in localStorage ({LS_KEY}). See EDUCATION.md · POLICY.md
       </p>
     </main>
   );

@@ -36,4 +36,10 @@ export const SCENARIOS = [
     kg: 750n,
     policy: POLICY_HALF_TONNE,
   },
+  {
+    id: "zero",
+    label: "0 kg @ 1000",
+    kg: 0n,
+    policy: POLICY_TONNE,
+  },
 ] as const;

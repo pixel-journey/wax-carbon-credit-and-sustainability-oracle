@@ -6,8 +6,10 @@ kg, kgPerCredit (or CreditPolicy)
         ▼
    untilNext → whole, remainder, need, exact, accountedKg
         │
-        ├── progressBps (partial unit only)
-        ├── afterAccumulate (preview kg + delta)
+        ├── progressBps / meterBar
+        ├── afterAccumulate (kg + delta)
+        ├── fromBatches (sum then floor)
+        ├── comparePolicies (two policies, one kg)
         └── exportNeedMarkdown
 ```
 
@@ -15,7 +17,7 @@ kg, kgPerCredit (or CreditPolicy)
 |-------|------|
 | `need.ts` | Pure rules |
 | `fixtures.ts` | Sample policies / scenarios |
-| `Demo.tsx` | Teaching UI |
+| `Demo.tsx` | Teaching UI + localStorage |
 | `api.ts` / `usecases.ts` | Unsent HTTP shapes |
 
 **Honesty boundary:** no registry, no MRV, no wallet, no broadcast.
