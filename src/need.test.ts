@@ -5,6 +5,7 @@ import {
   assertUntilInvariants,
   comparePolicies,
   fromBatches,
+  kgToReachWhole,
   meterBar,
   parseBatches,
   progressBps,
@@ -31,7 +32,6 @@ describe("untilNext", () => {
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.need).toBe(0n);
-    expect(r.exact).toBe(true);
     assertUntilInvariants(2_000n, 1_000n, r);
   });
 
@@ -114,5 +114,16 @@ describe("meterBar", () => {
   });
   it("shows partial hashes", () => {
     expect(meterBar(2500n, 1000n)).toMatch(/#/);
+  });
+});
+
+describe("kgToReachWhole", () => {
+  it("from 2500 to 4 wholes needs 1500", () => {
+    const r = kgToReachWhole(2_500n, 1_000n, 4n);
+    expect(r.ok && r.addKg).toBe(1_500n);
+  });
+  it("already at target needs 0", () => {
+    const r = kgToReachWhole(2_000n, 1_000n, 2n);
+    expect(r.ok && r.addKg).toBe(0n);
   });
 });

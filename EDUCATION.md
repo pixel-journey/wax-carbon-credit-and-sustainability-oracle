@@ -6,8 +6,9 @@
 2. **Exact multiples are special.** When `remainder === 0`, `need` is 0. That is arithmetic completeness, not an on-chain mint event.
 3. **Progress is not a second credit.** `progressBps` / `meterBar` measure how far into the *current incomplete* unit you are.
 4. **Policy is an argument.** Real registries define methodology, baselines, and issuance rules. This lab only accepts `kgPerCredit`.
-5. **Batching does not invent mass.** `fromBatches` sums non-negative batches then floors once — order of summands does not change the total under pure addition.
+5. **Batching does not invent mass.** `fromBatches` sums non-negative batches then floors once.
 6. **Two policies disagree on purpose.** `comparePolicies` shows how the same kg yields different whole/need under 1000 vs 500 kg per credit.
+7. **Target planning is separate.** `kgToReachWhole` answers “how much mass to add to hit N whole units?” without issuing anything.
 
 ## Worked examples
 
@@ -28,12 +29,7 @@
 
 ## Antelope / WAX notes
 
-If a contract stores accumulated mass and a threshold, re-read **that** table and action — do not import these sample numbers and claim they match mainnet. This package has no carbon oracle.
-
-## Best practice
-
-**Do** publish the policy. **Do** show need and remainder.  
-**Do not** label this page an oracle. **Do not** treat `need === 0` as environmental proof.
+If a contract stores accumulated mass and a threshold, re-read **that** table and action — do not import these sample numbers and claim they match mainnet.
 
 ## Related
 

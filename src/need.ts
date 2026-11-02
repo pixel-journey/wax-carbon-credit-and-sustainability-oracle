@@ -9,9 +9,7 @@ export type UntilOk = {
   whole: bigint;
   remainder: bigint;
   need: bigint;
-  /** true when kg is already an exact multiple of kgPerCredit */
   exact: boolean;
-  /** whole * kgPerCredit (mass accounted into full credits) */
   accountedKg: bigint;
 };
 
@@ -19,7 +17,6 @@ export type UntilErr = { ok: false; reason: string };
 export type UntilResult = UntilOk | UntilErr;
 
 export type CreditPolicy = {
-  /** Positive kilograms required for one whole credit. */
   kgPerCredit: bigint;
   label?: string;
 };
@@ -121,10 +118,6 @@ export function meterBar(kg: bigint, kgPerCredit: bigint): string {
   return `[${"#".repeat(clamped)}${".".repeat(10 - clamped)}] ${p.bps.toString()} bps`;
 }
 
-/**
- * Invariants that must hold for any successful untilNext result.
- * Used in tests and as documentation of the arithmetic contract.
- */
 export function assertUntilInvariants(
   kg: bigint,
   kgPerCredit: bigint,
@@ -150,8 +143,9 @@ export function assertUntilInvariants(
   }
 }
 
-/** Parse "100, 200, 50" style batch input. */
-export function parseBatches(text: string): { ok: false; reason: string } | { ok: true; batches: bigint[] } {
+export function parseBatches(
+  text: string
+): { ok: false; reason: string } | { ok: true; batches: bigint[] } {
   const parts = text
     .split(/[,\s]+/)
     .map((s) => s.trim())
@@ -170,4 +164,26 @@ export function parseBatches(text: string): { ok: false; reason: string } | { ok
     }
   }
   return { ok: true, batches };
+}
+
+/**
+ * Kilograms required to reach at least `targetWhole` complete units from current kg.
+ * If already at or above target, returns 0.
+ */
+export function kgToReachWhole(
+  kg: bigint,
+  kgPerCredit: bigint,
+  targetWhole: bigint
+): { ok: false; reason: string } | { ok: true; addKg: bigint; current: UntilOk } {
+  if (targetWhole < 0n) return { ok: false, reason: "targetWhole must be non-negative" };
+  const current = untilNext(kg, kgPerCredit);
+  if (!current.ok) return current;
+  const targetKg = targetWhole * kgPerCredit;
+  const addKg = targetKg > kg ? targetKg - kg : 0n;
+  return { ok: true, addKg, current };
+}
+
+/** Alias: delta that fills the current partial unit (same as need). */
+export function fillNeedDelta(kg: bigint, kgPerCredit: bigint): UntilResult {
+  return untilNext(kg, kgPerCredit);
 }

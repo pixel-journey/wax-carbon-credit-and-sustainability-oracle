@@ -4,11 +4,11 @@
 
 | Claim | Status |
 | --- | --- |
-| untilNext + invariants across range | unit |
-| progressBps | unit |
-| afterAccumulate | unit |
-| fromBatches / parseBatches | unit |
+| untilNext + invariants | unit |
+| progressBps / meterBar | unit |
+| afterAccumulate / fromBatches / parseBatches | unit |
 | comparePolicies | unit |
-| meterBar | unit |
+| kgToReachWhole | unit |
+| shareState encode/decode | unit |
 | Live oracle / issuance | out of scope |
-| Network from demo | not called |
+| Network from measure path | not called |

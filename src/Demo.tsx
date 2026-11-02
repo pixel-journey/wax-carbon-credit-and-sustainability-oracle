@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Cases } from "./Cases";
 import {
   downloadText,
   exportNeedCsv,
@@ -12,11 +13,13 @@ import {
   afterAccumulate,
   comparePolicies,
   fromBatches,
+  kgToReachWhole,
   meterBar,
   parseBatches,
   progressBps,
   untilNext,
 } from "./need";
+import { decodeShareState, encodeShareState } from "./shareState";
 import { WORKED_EXAMPLES } from "./workedExamples";
 
 const LS_KEY = "pxj-carbon-need-v1";
@@ -28,8 +31,23 @@ export function Demo() {
   const [compare, setCompare] = useState(false);
   const [batchText, setBatchText] = useState("");
   const [useBatches, setUseBatches] = useState(false);
+  const [targetWhole, setTargetWhole] = useState("3");
+  const [shareMsg, setShareMsg] = useState("");
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const fromUrl = decodeShareState(window.location.search);
+    if (fromUrl.kg || fromUrl.per) {
+      if (fromUrl.kg) setKg(fromUrl.kg);
+      if (fromUrl.per) setPer(fromUrl.per);
+      if (fromUrl.delta) setDelta(fromUrl.delta);
+      if (fromUrl.compare) setCompare(true);
+      if (fromUrl.useBatches) {
+        setUseBatches(true);
+        setBatchText(fromUrl.batchText ?? "");
+      }
+      return;
+    }
     try {
       const raw = localStorage.getItem(LS_KEY);
       if (!raw) return;
@@ -118,6 +136,19 @@ export function Demo() {
     }
   }, [compare, effectiveKg]);
 
+  const reach = useMemo(() => {
+    if (effectiveKg === null) return null;
+    try {
+      return kgToReachWhole(
+        effectiveKg,
+        BigInt(per.trim() || "0"),
+        BigInt(targetWhole.trim() || "0")
+      );
+    } catch {
+      return null;
+    }
+  }, [effectiveKg, per, targetWhole]);
+
   const applyScenario = (id: string) => {
     const s = SCENARIOS.find((x) => x.id === id);
     if (!s) return;
@@ -125,6 +156,34 @@ export function Demo() {
     setKg(s.kg.toString());
     setPer(s.policy.kgPerCredit.toString());
     setDelta("0");
+  };
+
+  const fillNeed = () => {
+    if (!result.ok || useBatches) return;
+    setDelta(result.need.toString());
+  };
+
+  const copyShare = async () => {
+    const qs = encodeShareState({
+      kg,
+      per,
+      delta,
+      compare,
+      useBatches,
+      batchText,
+    });
+    const url =
+      typeof window !== "undefined"
+        ? `${window.location.pathname}?${qs}`
+        : `?${qs}`;
+    try {
+      await navigator.clipboard.writeText(
+        typeof window !== "undefined" ? window.location.origin + url : url
+      );
+      setShareMsg("Share URL copied");
+    } catch {
+      setShareMsg(url);
+    }
   };
 
   return (
@@ -247,6 +306,11 @@ export function Demo() {
             </p>
           )}
           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+            {!useBatches && result.need > 0n && (
+              <button type="button" onClick={fillNeed}>
+                Set delta = need ({result.need.toString()})
+              </button>
+            )}
             <button
               type="button"
               onClick={() =>
@@ -283,11 +347,37 @@ export function Demo() {
             >
               Download CSV
             </button>
+            <button type="button" onClick={() => void copyShare()}>
+              Copy share URL
+            </button>
           </div>
+          {shareMsg && (
+            <p style={{ fontSize: "0.85rem", opacity: 0.8 }}>{shareMsg}</p>
+          )}
         </>
       ) : (
         <p>{result.reason}</p>
       )}
+
+      <section style={{ marginTop: "1.5rem" }}>
+        <h2 style={{ fontSize: "1rem" }}>Reach a target whole count</h2>
+        <label style={{ display: "block", marginBottom: "0.5rem" }}>
+          Target whole units
+          <input
+            value={targetWhole}
+            onChange={(e) => setTargetWhole(e.target.value)}
+            style={{ display: "block", width: "100%", marginTop: "0.25rem" }}
+          />
+        </label>
+        {reach && reach.ok ? (
+          <p>
+            Add <strong>{reach.addKg.toString()}</strong> kg to reach ≥ {targetWhole}{" "}
+            whole units (from current effective mass).
+          </p>
+        ) : reach && !reach.ok ? (
+          <p>{reach.reason}</p>
+        ) : null}
+      </section>
 
       {sideBySide && sideBySide.ok && (
         <section style={{ marginTop: "1.5rem" }}>
@@ -346,13 +436,15 @@ export function Demo() {
         </table>
       </section>
 
+      <Cases />
+
       <section style={{ marginTop: "2rem" }}>
         <h2 style={{ fontSize: "1rem" }}>Runbook</h2>
         <ol style={{ fontSize: "0.9rem" }}>
           <li>Pick a published kg-per-credit policy (or a sample scenario).</li>
           <li>Enter accumulated kg — or sum batches, then floor once.</li>
           <li>Read whole / remainder / need / meter.</li>
-          <li>Optional: preview a delta; compare two policies; export MD/CSV.</li>
+          <li>Optional: fill need into delta; target whole; compare policies; share URL; export.</li>
           <li>Never treat need=0 as an on-chain mint or environmental proof.</li>
         </ol>
       </section>
@@ -372,7 +464,8 @@ export function Demo() {
       </section>
 
       <p style={{ marginTop: "2rem", fontSize: "0.85rem", opacity: 0.75 }}>
-        Inputs persist in localStorage ({LS_KEY}). See EDUCATION.md · POLICY.md
+        URL query overrides localStorage when present. See EDUCATION.md · SECURITY.md ·
+        POLICY.md
       </p>
     </main>
   );

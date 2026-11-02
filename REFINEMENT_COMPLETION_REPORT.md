@@ -4,10 +4,10 @@
 
 | Area | Notes |
 |------|-------|
-| Engine | assertUntilInvariants, parseBatches |
-| Tests | range invariants, parseBatches |
-| UI | batch mode, CSV export, worked-examples table |
-| Myths/glossary | batching myth, remainder/accountedKg terms |
+| Engine | kgToReachWhole |
+| Share | URL query encode/decode |
+| UI | fill need → delta, target whole, Cases, share copy |
+| Docs | SECURITY.md |
 
 ```bash
 npm test && npm run dev
