@@ -2,7 +2,7 @@
 
 > **Trust label:** `educational-reference`  
 > **Status:** Full-thrust education pass (2026-11-02)  
-> **Catalog:** [wax-ecosystem-blueprint-catalog](https://github.com/pixel-journey/wax-ecosystem-blueprint-catalog)
+> **Catalog:** `wax-ecosystem-blueprint-catalog` (private index; not this public course)
 
 **One-sentence goal:** Teach **how many kilograms remain until the next whole credit** under a fixed policy — with pure, unit-tested math — without claiming to be a live sustainability oracle.
 

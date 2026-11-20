@@ -36,9 +36,14 @@ describe("untilNext", () => {
   });
 
   it("zero kg is exact with zero whole", () => {
-    const r = untilNext(0n, 1_000n);
-    expect(r.ok).toBe(true);
-    if (r.ok) assertUntilInvariants(0n, 1_000n, r);
+    expect(untilNext(0n, 1_000n)).toEqual({
+      ok: true,
+      whole: 0n,
+      remainder: 0n,
+      need: 0n,
+      exact: true,
+      accountedKg: 0n,
+    });
   });
 
   it("refuses bad inputs", () => {
@@ -65,6 +70,8 @@ describe("untilNextWithPolicy", () => {
 describe("progressBps", () => {
   it("is 5000 at half a unit", () => {
     expect(progressBps(2_500n, 1_000n)).toEqual({ ok: true, bps: 5_000n });
+    expect(progressBps(100n, 1_000n)).toEqual({ ok: true, bps: 1_000n });
+    expect(progressBps(750n, 500n)).toEqual({ ok: true, bps: 5_000n });
   });
   it("is 0 when exact", () => {
     expect(progressBps(2_000n, 1_000n)).toEqual({ ok: true, bps: 0n });
